@@ -247,7 +247,8 @@ AlzValue *stdlib_type_of(AlzValue *val) {
         case VAL_STRING: return alz_string("string");
         case VAL_LIST:   return alz_string("list");
         case VAL_OBJECT: return alz_string("object");
-        case VAL_MODULE: return alz_string("module");
+        case VAL_MODULE:   return alz_string("module");
+        case VAL_FUNCTION: return alz_string("function");
     }
     return alz_string("unknown");
 }

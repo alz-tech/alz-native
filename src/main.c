@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
 
     // --version
     if (strcmp(argv[1], "--version") == 0) {
-        printf("AlzScript Native v0.1.0 (Phase 2)\n");
+        printf("AlzScript Native v1.0.0\n");
         return 0;
     }
 
