@@ -77,7 +77,12 @@ if [ "$DEST" = "$HOME/.local/bin/$BIN" ] && ! echo "$PATH" | grep -q "$HOME/.loc
     [ -f "$HOME/.zshrc" ] && SHELL_RC="$HOME/.zshrc"
     echo "export PATH=\"\$PATH:$HOME/.local/bin\"" >> "$SHELL_RC"
     echo "   Added to PATH in $SHELL_RC"
-    echo "   Run: source $SHELL_RC"
+    # Also export it right now, just for this script's own verification
+    # below. This does NOT persist to your interactive shell -- that is a
+    # real shell limitation, not something a curl|bash script can work
+    # around. You will still need a new terminal (or `source` it yourself)
+    # before alzc works without the full path -- same as nvm/rustup/cargo.
+    export PATH="$PATH:$HOME/.local/bin"
 fi
 
 echo ""
@@ -86,6 +91,12 @@ if command -v alzc > /dev/null 2>&1; then
     echo ""
     echo "Quick start:"
     echo "  echo 'print \"Hello World!\"' > hello.az && alzc hello.az"
+    if [ "$DEST" = "$HOME/.local/bin/$BIN" ]; then
+        echo ""
+        echo "Note: alzc verified above, but THIS terminal session will not"
+        echo "see it on PATH until you open a new terminal, or run:"
+        echo "  source $HOME/.bashrc"
+    fi
 else
     echo "Done! Restart terminal then run: alzc --version"
 fi
