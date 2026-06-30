@@ -47,16 +47,27 @@ if [ "$IS_TERMUX" = "1" ]; then
         rm -rf "$SRC_DIR"
     fi
     echo "Fetching source..."
-    git clone --depth 1 "https://github.com/$REPO.git" "$SRC_DIR" > /dev/null 2>&1
+    if ! git clone --depth 1 "https://github.com/$REPO.git" "$SRC_DIR" 2>/tmp/alz-clone-err; then
+        echo "❌ git clone failed:"
+        cat /tmp/alz-clone-err
+        exit 1
+    fi
+    if [ ! -f "$SRC_DIR/src/main.c" ]; then
+        echo "❌ Source clone looks incomplete -- src/main.c is missing."
+        exit 1
+    fi
 
     echo "Compiling (this takes under a minute)..."
     cd "$SRC_DIR"
     LOCAL_BIN="$HOME/.local/bin"
     mkdir -p "$LOCAL_BIN"
-    $CC -std=c11 -O2 -Iinclude \
+    if ! $CC -std=c11 -O2 -Iinclude \
         src/value.c src/chunk.c src/vm.c src/lexer.c \
         src/compiler.c src/stdlib.c src/http.c src/db.c src/main.c \
-        -o "$LOCAL_BIN/$BIN" -lm
+        -o "$LOCAL_BIN/$BIN" -lm; then
+        echo "❌ Compilation failed. See errors above."
+        exit 1
+    fi
 
     chmod +x "$LOCAL_BIN/$BIN"
     echo "✅ Built and installed to $LOCAL_BIN/$BIN"
@@ -121,7 +132,15 @@ LATEST=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" \
     | grep '"tag_name"' | sed 's/.*"tag_name": *"\(.*\)".*/\1/')
 
 if [ -z "$LATEST" ]; then
-    echo "❌ Could not fetch latest release. Check your internet connection."
+    echo "❌ Could not fetch a published release."
+    echo ""
+    echo "This usually means one of two things:"
+    echo "  1. GitHub Actions is still building the release (can take 5-10"
+    echo "     minutes after a tag push) -- check:"
+    echo "     https://github.com/$REPO/actions"
+    echo "  2. You have no internet connection right now."
+    echo ""
+    echo "If Actions shows a green checkmark, try this script again."
     exit 1
 fi
 
