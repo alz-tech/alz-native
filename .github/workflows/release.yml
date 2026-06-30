@@ -24,17 +24,17 @@ jobs:
             -o alzc-linux-x64 -lm
           strip alzc-linux-x64
 
-      - name: Build Linux ARM64
+      - name: Build Linux ARM64 (static)
         run: |
-          aarch64-linux-gnu-gcc -std=c11 -O2 -Iinclude \
+          aarch64-linux-gnu-gcc -std=c11 -O2 -static -Iinclude \
             src/value.c src/chunk.c src/vm.c src/lexer.c \
             src/compiler.c src/stdlib.c src/http.c src/db.c src/main.c \
             -o alzc-linux-arm64 -lm
           aarch64-linux-gnu-strip alzc-linux-arm64
 
-      - name: Build Linux ARM (Termux/Android)
+      - name: Build Linux ARM (Termux-compatible, static)
         run: |
-          arm-linux-gnueabihf-gcc -std=c11 -O2 -Iinclude \
+          arm-linux-gnueabihf-gcc -std=c11 -O2 -static -Iinclude \
             src/value.c src/chunk.c src/vm.c src/lexer.c \
             src/compiler.c src/stdlib.c src/http.c src/db.c src/main.c \
             -o alzc-linux-arm -lm

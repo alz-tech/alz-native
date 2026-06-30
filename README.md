@@ -78,6 +78,7 @@ http.serve(3000)
 ```
 
 ### Database
+JSON file storage, zero setup. Each table is a `.json` file under `.alzdb/` in your project directory, created automatically on first `db.save`.
 ```az
 -- Save
 user = db.save("users", {name: "Wilfort", role: "admin"})
