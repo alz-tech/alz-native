@@ -7,11 +7,13 @@ on:
 
 jobs:
   build-linux:
-    # Pinned to 20.04, not ubuntu-latest. Binaries built against a newer
-    # glibc (24.04 ships 2.39) refuse to run on older servers/VPS with
-    # "GLIBC_2.38 not found" -- glibc is forward-compatible but not
-    # backward-compatible, so building old = running everywhere.
-    runs-on: ubuntu-20.04
+    # Pinned to 22.04, not ubuntu-latest (24.04, glibc 2.39) and NOT
+    # 20.04 -- that image was fully deprecated/retired in April 2025 and
+    # jobs targeting it now sit queued indefinitely with no runner
+    # available, rather than running or failing visibly.
+    # 22.04 ships glibc 2.35: still meaningfully older/more compatible
+    # than 24.04, while remaining a real, currently-supported image.
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
