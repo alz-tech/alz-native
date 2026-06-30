@@ -61,6 +61,16 @@ if [ "$IS_TERMUX" = "1" ]; then
     cd "$SRC_DIR"
     LOCAL_BIN="$HOME/.local/bin"
     mkdir -p "$LOCAL_BIN"
+
+    # If an old alzc already sits earlier on PATH (e.g. /usr/local/bin,
+    # writable when running as root), it will shadow the fresh build
+    # below no matter what we install to ~/.local/bin. Clear it first.
+    if [ -w "/usr/local/bin" ] && [ -e "/usr/local/bin/$BIN" ]; then
+        echo "Removing stale binary at /usr/local/bin/$BIN (was shadowing PATH)..."
+        rm -f "/usr/local/bin/$BIN"
+    fi
+    hash -r 2>/dev/null || true
+
     if ! $CC -std=c11 -O2 -Iinclude \
         src/value.c src/chunk.c src/vm.c src/lexer.c \
         src/compiler.c src/stdlib.c src/http.c src/db.c src/main.c \
@@ -81,6 +91,7 @@ if [ "$IS_TERMUX" = "1" ]; then
     fi
 
     echo ""
+    hash -r 2>/dev/null || true
     if command -v alzc > /dev/null 2>&1; then
         alzc --version
         echo ""
