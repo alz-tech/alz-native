@@ -17,7 +17,20 @@ echo "Detecting platform..."
 # on startup, because they issue syscalls Termux's policy doesn't expect. The only
 # reliable fix is building from source with Termux's OWN clang, which is compiled
 # specifically to stay inside that sandbox.
-if [ -n "$PREFIX" ] && [ -d "$PREFIX" ] && echo "$PREFIX" | grep -q "com.termux"; then
+# Detect Termux by checking for its filesystem root directly, rather than
+# relying on $PREFIX being inherited into this curl|bash subshell -- some
+# Termux configs only export it from .bashrc, which a non-interactive
+# pipe-to-bash session never sources.
+IS_TERMUX=0
+if [ -d "/data/data/com.termux/files/usr" ]; then
+    IS_TERMUX=1
+elif [ -n "$PREFIX" ] && echo "$PREFIX" | grep -q "com.termux"; then
+    IS_TERMUX=1
+fi
+
+if [ "$IS_TERMUX" = "1" ]; then
+    [ -z "$PREFIX" ] && export PREFIX="/data/data/com.termux/files/usr"
+    [ -z "$HOME" ] && export HOME="/data/data/com.termux/files/home"
     echo "Platform: Termux (Android) -- building from source"
     echo "(prebuilt binaries trigger Android's seccomp filter; this is the reliable path)"
     echo ""
