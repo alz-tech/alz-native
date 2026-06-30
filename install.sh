@@ -11,6 +11,67 @@ echo "🚀 AlzScript Native Installer"
 echo ""
 echo "Detecting platform..."
 
+# Termux sets $PREFIX to its sandboxed root (e.g. /data/data/com.termux/files/usr).
+# Binaries built by GitHub Actions' generic Ubuntu runner -- even when statically
+# linked -- get killed by Android's seccomp filter with SIGSYS / "Bad system call"
+# on startup, because they issue syscalls Termux's policy doesn't expect. The only
+# reliable fix is building from source with Termux's OWN clang, which is compiled
+# specifically to stay inside that sandbox.
+if [ -n "$PREFIX" ] && [ -d "$PREFIX" ] && echo "$PREFIX" | grep -q "com.termux"; then
+    echo "Platform: Termux (Android) -- building from source"
+    echo "(prebuilt binaries trigger Android's seccomp filter; this is the reliable path)"
+    echo ""
+
+    if ! command -v clang > /dev/null 2>&1 && ! command -v gcc > /dev/null 2>&1; then
+        echo "Installing build tools (clang)..."
+        pkg install -y clang git > /dev/null 2>&1
+    fi
+    CC="clang"
+    command -v clang > /dev/null 2>&1 || CC="gcc"
+
+    SRC_DIR="$HOME/.alz-native-src"
+    if [ -d "$SRC_DIR" ]; then
+        rm -rf "$SRC_DIR"
+    fi
+    echo "Fetching source..."
+    git clone --depth 1 "https://github.com/$REPO.git" "$SRC_DIR" > /dev/null 2>&1
+
+    echo "Compiling (this takes under a minute)..."
+    cd "$SRC_DIR"
+    LOCAL_BIN="$HOME/.local/bin"
+    mkdir -p "$LOCAL_BIN"
+    $CC -std=c11 -O2 -Iinclude \
+        src/value.c src/chunk.c src/vm.c src/lexer.c \
+        src/compiler.c src/stdlib.c src/http.c src/db.c src/main.c \
+        -o "$LOCAL_BIN/$BIN" -lm
+
+    chmod +x "$LOCAL_BIN/$BIN"
+    echo "✅ Built and installed to $LOCAL_BIN/$BIN"
+
+    if ! echo "$PATH" | grep -q "$LOCAL_BIN"; then
+        SHELL_RC="$HOME/.bashrc"
+        [ -f "$HOME/.zshrc" ] && SHELL_RC="$HOME/.zshrc"
+        echo "export PATH=\"\$PATH:$LOCAL_BIN\"" >> "$SHELL_RC"
+        echo "   Added to PATH in $SHELL_RC"
+        export PATH="$PATH:$LOCAL_BIN"
+    fi
+
+    echo ""
+    if command -v alzc > /dev/null 2>&1; then
+        alzc --version
+        echo ""
+        echo "Quick start:"
+        echo "  echo 'print \"Hello World!\"' > hello.az && alzc hello.az"
+        echo ""
+        echo "Note: alzc verified above, but THIS terminal session will not"
+        echo "see it on PATH until you open a new terminal, or run:"
+        echo "  source $HOME/.bashrc"
+    else
+        echo "Done! Restart terminal then run: alzc --version"
+    fi
+    exit 0
+fi
+
 OS="$(uname -s)"
 ARCH="$(uname -m)"
 
