@@ -54,28 +54,30 @@ fi
 echo "Version:  $LATEST"
 
 URL="https://github.com/$REPO/releases/download/$LATEST/$FILE"
-TMP="/tmp/alzc-download"
 
-echo "Downloading from GitHub..."
-curl -fsSL "$URL" -o "$TMP"
-chmod +x "$TMP"
-
-# Try /usr/local/bin first, then ~/.local/bin for Termux/no-root
+# Decide install location FIRST, then download straight into it.
+# Termux's /tmp is a separate tmpfs from $HOME — staging there and
+# mv'ing across that boundary can get killed by Android's storage
+# sandbox mid-write. Writing the final file directly avoids that.
 if [ -w "/usr/local/bin" ]; then
-    mv "$TMP" "/usr/local/bin/$BIN"
-    echo "✅ Installed to /usr/local/bin/$BIN"
+    DEST="/usr/local/bin/$BIN"
 else
     LOCAL_BIN="$HOME/.local/bin"
     mkdir -p "$LOCAL_BIN"
-    mv "$TMP" "$LOCAL_BIN/$BIN"
-    echo "✅ Installed to $LOCAL_BIN/$BIN"
-    if ! echo "$PATH" | grep -q "$LOCAL_BIN"; then
-        SHELL_RC="$HOME/.bashrc"
-        [ -f "$HOME/.zshrc" ] && SHELL_RC="$HOME/.zshrc"
-        echo "export PATH=\"\$PATH:$LOCAL_BIN\"" >> "$SHELL_RC"
-        echo "   Added to PATH in $SHELL_RC"
-        echo "   Run: source $SHELL_RC"
-    fi
+    DEST="$LOCAL_BIN/$BIN"
+fi
+
+echo "Downloading from GitHub..."
+curl -fL "$URL" -o "$DEST"
+chmod +x "$DEST"
+echo "✅ Installed to $DEST"
+
+if [ "$DEST" = "$HOME/.local/bin/$BIN" ] && ! echo "$PATH" | grep -q "$HOME/.local/bin"; then
+    SHELL_RC="$HOME/.bashrc"
+    [ -f "$HOME/.zshrc" ] && SHELL_RC="$HOME/.zshrc"
+    echo "export PATH=\"\$PATH:$HOME/.local/bin\"" >> "$SHELL_RC"
+    echo "   Added to PATH in $SHELL_RC"
+    echo "   Run: source $SHELL_RC"
 fi
 
 echo ""
